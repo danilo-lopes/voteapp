@@ -10,4 +10,8 @@ services:
       - AWS_REGION=${AWS_REGION}
     ports:
       - "8080:80"
-    container_name: voting
+    networks:
+      - backend
+
+networks:
+  backend:

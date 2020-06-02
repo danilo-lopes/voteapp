@@ -1,36 +1,20 @@
-import os
-import boto3
+from models import Message, QueueService, MessageRepository
+from dataBases import sqsConnection
 
+sqsConnection = sqsConnection()
 
-def sqsConnection():
-    sqsClient = None
+queueService = QueueService(sqsConnection)
+serviceRepository = MessageRepository()
 
-    while not sqsClient:
-        try:
-            session = boto3.session.Session()
-            sqsClient = session.resource(
-                'sqs',
-                aws_access_key_id=os.getenv('AWS_ACCESS_KEY'),
-                aws_secret_access_key=os.getenv('AWS_SECRET_KEY'),
-                region_name=os.getenv('AWS_REGION')
-            )
+while True:
+    queueMessages = queueService.getMessageFromSqs()
 
-            return sqsClient
+    for message in queueMessages:
+        sqsMessage = Message(body=message.body, messageID=message.message_id, receiptHandle=message.receipt_handle)
 
-        except:
-            return None
+        if sqsMessage.body:
+            serviceRepository.storeMessageIntoDatabase(sqsMessage)
 
+            queueService.deleMessagesFromSqsQueue(sqsMessage)
 
-# def mysqlConnection():
-#     try:
-#         coonMysql = MySQLdb.connect(
-#             host=os.getenv('MYSQL_HOST'),
-#             port=3306,
-#             user=os.getenv('MYSQL_USER'),
-#             passwd=os.getenv('MYSQL_PASSWORD')
-#         )
-#
-#         return coonMysql
-#
-#     except Exception as erro:
-#         return f'Connection erro. {erro}'
+    continue
