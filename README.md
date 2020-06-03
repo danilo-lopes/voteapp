@@ -11,15 +11,25 @@ fila, banco de dados e serviços de WEB/API.
 
 [docker-composer](https://docs.docker.com/compose/install/)
 
-**Criar duas Docker network do tipo Overlay, uma chamada backend e a outra frontend.**
+**Crie duas Docker network do tipo Overlay, uma chamada backend e a outra frontend.**
 
-`docker network create -d overlay backend`
+`docker network create --driver overlay --attachable voting_backend`
 
-`docker network create -d overlay frontend`
+`docker network create --driver overlay --attachable voting_frontend`
 
 **Nota:** Necessário iniciar o swarm no nó em que vai subir os containeres
 
-Variaveis de ambiente:
+`docker swarm init --advertise-addr "nome da sua interface de rede ou o endereço ip dela"`
+
+**Crie um docker volume apontando para algum diretório da sua máquina para garantirmos os dados do banco**
+```
+docker volume create --driver local \
+    --opt type=none \
+    --opt device=/srv/voting_voteapp-data \
+    --opt o=bind voting_voteapp-data
+```
+
+**Variaveis de ambiente necessárias:**
 
 ```
 export AWS_ACCESS_KEY='BAR'
@@ -29,11 +39,14 @@ export MYSQL_HOST='BAR'
 export MYSQL_USER='FOO'
 export MYSQL_DB='voteapp'
 export MYSQL_PASSWORD='foo'
+export COMPOSE_PROJECT_NAME=voting
 ```
 
 > Não mude o nome da database.
 
 ---
+
+Após o setup inicial:
 
 ```
 docker-compose -f docker-compose.yml up

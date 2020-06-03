@@ -17,8 +17,19 @@ services:
     ports:
       - "8081:80"
     networks:
-      - backend
-      - frontend
+      - voting_backend
+      - voting_frontend
+
+  voting:
+    image: dansolo7/voting:1.0
+    environment:
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+    ports:
+      - "8080:80"
+    networks:
+      - voting_frontend
 
   worker:
     depends_on:
@@ -33,30 +44,35 @@ services:
       - MYSQL_DB=${MYSQL_DB}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     networks:
-      - backend
-      - frontend
-
-  voting:
-    image: dansolo7/voting:1.0
-    environment:
-      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
-      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
-      - AWS_REGION=${AWS_REGION}
-    ports:
-      - "8080:80"
+      - voting_backend
 
   mysql:
     image: mysql
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
       - MYSQL_USER=${MYSQL_USER}
+    volumes:
+      - voting_voteapp-data:/var/lib/mysql:rw
     ports:
       - 3306:3306
     networks:
-      - backend
+      - voting_backend
     container_name: mysql
     command: [--default-authentication-plugin=mysql_native_password]
 
+
 networks:
-  backend:
-  frontend:
+  voting_backend:
+    external:
+      name:
+        voting_backend
+
+  voting_frontend:
+    external:
+      name:
+        voting_frontend
+
+volumes:
+  voting_voteapp-data:
+    external:
+      name: voting_voteapp-data
