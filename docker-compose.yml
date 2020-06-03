@@ -18,6 +18,7 @@ services:
       - "8081:80"
     networks:
       - backend
+      - frontend
 
   worker:
     depends_on:
@@ -33,6 +34,7 @@ services:
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     networks:
       - backend
+      - frontend
 
   voting:
     image: dansolo7/voting:1.0
@@ -42,8 +44,6 @@ services:
       - AWS_REGION=${AWS_REGION}
     ports:
       - "8080:80"
-    networks:
-      - backend
 
   mysql:
     image: mysql
@@ -59,3 +59,4 @@ services:
 
 networks:
   backend:
+  frontend:
