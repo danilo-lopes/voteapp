@@ -32,7 +32,7 @@ class QueueService:
         sqsClient = self.__sqsConnection
         queueUrl = sqsClient.get_queue_by_name(QueueName='voting')
 
-        queueUrl.delete_messages(
+        return queueUrl.delete_messages(
             Entries=[
                 {
                     'Id': message.messageID,
@@ -51,4 +51,4 @@ class MessageRepository:
 
         daoVote = VotingDao()
 
-        daoVote.registerVote(MessagePassedToJson['userID'], MessagePassedToJson['vote'])
+        return daoVote.registerVote(MessagePassedToJson['userID'], MessagePassedToJson['vote'])

@@ -22,6 +22,7 @@ fila, banco de dados e serviços de WEB/API.
 `docker swarm init --advertise-addr "nome da sua interface de rede ou o endereço ip dela"`
 
 **Crie um docker volume apontando para algum diretório da sua máquina para garantirmos os dados do banco**
+
 ```
 docker volume create --driver local \
     --opt type=none \
@@ -54,7 +55,7 @@ docker-compose -f docker-compose.yml up
 
 # Arquitetura
 
-![Imgur](https://i.imgur.com/tWgVAlf.png)
+![Imgur](https://i.imgur.com/8EOieBU.png)
 
 * Front-end web em [Python](https://www.python.org/download/releases/3.0/) responsável por registrar os votos dos 
 usuários e deixar escolher entre duas opções de voto.
@@ -67,7 +68,108 @@ usuários e deixar escolher entre duas opções de voto.
 
 * Front-end API que retorna a quantidade de votos.
 
+# API
+
+### Aplicação Vote
+A aplicação vote disponibiliza um api para realizar os votos e checar se o serviço que o mesmo utiliza (SQS) está
+operacional. 
+
+Endpoints:
+
+`:8080/api/healthcheck` - Saude da fila SQS
+
+return code:
+
+```
+{
+    "sqsStatus": "OK"
+}
+```
+
+`:8080/api/postVotes` - enviar seu voto
+
+formato de json aceito no endpoint:
+
+`{"userID": "id-xxxyyyzzz", "vote": "coca"}`
+
+Ex:
+
+`curl -H "Content-Type: application/json" -X POST -d '{"userID": "id-xxxyyyzzz", "vote": "coca"}' http://localhost:8080/api/postVotes`
+
+return code:
+
+```
+{
+    "voteStatus": 200
+}
+```
+
+Voce deve enviar um json passando as chaves "userID" e "vote".
+
+Se passar campos inválidos:
+
+Ex:
+
+`curl -H "Content-Type: application/json" -X POST -d '{"foo": "id-xxxyyyzzz", "bar": "coca"}' http://localhost:8080/api/postVotes`
+
+return code:
+
+```
+{
+    "badRequest": "Your json doesnt pass in the application creteria"
+}
+```
+
+### Aplicação Worker
+
+A aplicação worker também disponibiliza um api. A função dos endpoints é fornecer informações de operabilidade estável
+dos serviços que a aplicação utiliza, no caso, a fila do SQS e o banco de dados.
+
+Enpoits:
+
+`8081/api/healthchecksqs` - Saude do sqs
+
+return code:
+
+```
+{
+    "sqsStatus": "OK"
+}
+
+```
+
+`8081/api/healthcheckmysql` - Saude do banco de dados
+
+return code:
+
+```
+{
+    "mysqlStatus": "OK"
+}
+```
+
+### Aplicação Front
+
+A aplicação front disponibila um endpoint para checagem dos votos.
+
+Endpoint:
+
+`:8082/api/votes`
+
+return code:
+
+```
+{
+    "votes": {
+        "coca": "2",
+        "pepsi": "1"
+    }
+}
+
+```
+
 # Nota
 
-A aplicação só aceita um voto por cliente baseado no seu [COOKIE](https://www.allaboutcookies.org/cookies/).
-É possível votar mais de uma vez, porém o seu voto será atualizado e não quantificado.
+A aplicação só se baseia em ID único. Através do [COOKIE](https://www.allaboutcookies.org/cookies/) quando o voto é feito
+via browser ou userID via API. É possível votar mais de uma vez via browser ou via API com o mesmo COOKIE ou userID,
+porém o seu voto será atualizado e não quantificado.

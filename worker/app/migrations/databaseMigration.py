@@ -1,6 +1,8 @@
 import os
 import MySQLdb
 
+#open("workerServiceLog/workerService.log", "w+")
+
 coon = MySQLdb.connect(
     user=os.getenv('MYSQL_USER'),
     passwd=os.getenv('MYSQL_PASSWORD'),

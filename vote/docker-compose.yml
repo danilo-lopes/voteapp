@@ -3,7 +3,7 @@ version: "3.6"
 services:
 
   voting:
-    image: dansolo7/voting:1.0
+    image: dansolo7/voting:2.0
     environment:
       - AWS_SECRET_KEY=${AWS_SECRET_KEY}
       - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}

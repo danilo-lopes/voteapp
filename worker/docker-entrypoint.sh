@@ -8,4 +8,5 @@ echo "Applying database migrations"
 python3 migrations/databaseMigration.py
 
 echo "Starting application"
-python3 worker.py
+python3 worker.py &
+python3 worker-service.py 

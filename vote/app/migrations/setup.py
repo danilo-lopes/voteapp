@@ -1,16 +1,17 @@
 import datetime
 from prepare_sqs import createQueue
 
-print('Dealing with SQS queue creation. To see what happen see logs/migration.log')
+print('Dealing with SQS queue creation. To see what happen see migrationLog/migration.log')
 
 try:
 
     result = createQueue()
+    open("migrationLog/migration.log","w+")
 
     if result == 200:
         now = str(datetime.datetime.now()).split('.')[0]
 
-        file = open('logs/migration.log', 'a')
+        file = open('migrationLog/migration.log', 'a')
 
         message = f'\n {now} queue voting created successfully'
 
@@ -21,7 +22,7 @@ try:
     elif result == 'voting':
         now = str(datetime.datetime.now()).split('.')[0]
 
-        file = open('logs/migration.log', 'a')
+        file = open('migrationLog/migration.log', 'a')
 
         message = f'\n {now} queue voting already exists'
 
@@ -33,7 +34,7 @@ try:
 except Exception as erro:
     now = str(datetime.datetime.now()).split('.')[0]
 
-    file = open('logs/migration.log', 'a')
+    file = open('migrationLog/migration.log', 'a')
 
     message = f'\n {now} {erro}'
 

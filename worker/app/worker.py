@@ -1,20 +1,9 @@
-from models import Message, QueueService, MessageRepository
-from dataBases import sqsConnection
+from flask import Flask
 
-sqsConnection = sqsConnection()
 
-queueService = QueueService(sqsConnection)
-serviceRepository = MessageRepository()
+app = Flask(__name__)
 
-while True:
-    queueMessages = queueService.getMessageFromSqs()
+from api.api import *
 
-    for message in queueMessages:
-        sqsMessage = Message(body=message.body, messageID=message.message_id, receiptHandle=message.receipt_handle)
-
-        if sqsMessage.body:
-            serviceRepository.storeMessageIntoDatabase(sqsMessage)
-
-            queueService.deleMessagesFromSqsQueue(sqsMessage)
-
-    continue
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=80, debug=True)

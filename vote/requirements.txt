@@ -1,2 +1,3 @@
-flask
-boto3
+Flask==1.1.2
+Flask-RESTful==0.3.8
+boto3==1.13.19

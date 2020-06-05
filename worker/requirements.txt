@@ -1,2 +1,4 @@
-boto3==1.13.19
 mysqlclient==1.4.6
+Flask==1.1.2
+Flask-RESTful==0.3.8
+boto3==1.13.19
