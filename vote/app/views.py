@@ -1,7 +1,8 @@
 import socket
 import random
 import json
-from voting import app, getSqsConnection
+from voting import app
+from dataBases import getSqsConnection
 from flask import render_template, request, make_response
 
 title = 'Voting App'
