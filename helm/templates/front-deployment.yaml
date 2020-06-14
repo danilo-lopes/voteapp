@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+  labels:
+    run: front
+  name: {{ .Release.Name }}-front-server
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: front
+  template:
+    metadata:
+      labels:
+        run: front
+    spec:
+      containers:
+      - image: dansolo7/front:{{ .Values.front.version }}
+        imagePullPolicy: Always
+        name: front
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        env:
+        - name: MYSQL_HOST
+          value: {{ .Values.front.MYSQL_HOST }}
+
+        - name: MYSQL_USER
+          value: {{ .Values.front.MYSQL_USER }}
+
+        - name: MYSQL_DB
+          value: {{ .Values.front.MYSQL_DB }}
+
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-voteapp-secret
+              key: mysql_password
+
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

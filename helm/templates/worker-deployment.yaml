@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+  labels:
+    run: worker
+  name: {{ .Release.Name }}-worker-server
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: worker
+  template:
+    metadata:
+      labels:
+        run: worker
+    spec:
+      containers:
+      - image: dansolo7/worker:{{ .Values.worker.version }}
+        imagePullPolicy: Always
+        name: worker
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        env:
+        - name: AWS_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-voteapp-secret
+              key: aws_access_key
+
+        - name: AWS_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-voteapp-secret
+              key: aws_secret_key
+
+        - name: AWS_REGION
+          value: {{ .Values.worker.AWS_REGION }}
+
+        - name: MYSQL_HOST
+          value: {{ .Values.worker.MYSQL_HOST }}
+
+        - name: MYSQL_USER
+          value: {{ .Values.worker.MYSQL_USER }}
+
+        - name: MYSQL_DB
+          value: {{ .Values.worker.MYSQL_DB }}
+
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-voteapp-secret
+              key: mysql_password
+
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

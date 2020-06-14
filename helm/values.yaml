@@ -1,0 +1,28 @@
+
+vote:
+  version: "2.0"
+  AWS_REGION: us-east-1
+
+worker:
+  version: "2.0"
+  AWS_REGION: us-east-1
+  MYSQL_HOST: mysql-service
+  MYSQL_USER: root
+  MYSQL_DB: voteapp
+
+front:
+  version: "1.0"
+  MYSQL_HOST: mysql-service
+  MYSQL_USER: root
+  MYSQL_DB: voteapp
+
+mysql:
+  version: "5.7"
+  MYSQL_HOST: mysql
+  MYSQL_USER: root
+  MYSQL_DB: voteapp
+
+passwords:
+  MYSQL_PASSWORD:
+  AWS_ACCESS_KEY:
+  AWS_SECRET_KEY:

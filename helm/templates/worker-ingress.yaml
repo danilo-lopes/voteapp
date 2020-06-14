@@ -1,0 +1,17 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-worker-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/default-backend: default/defaultbackend-service
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: www.worker.com
+    http:
+      paths:
+        - path: /
+          backend:
+            serviceName: {{ .Release.Name }}-worker-service # Selecting Service
+            servicePort: 80
