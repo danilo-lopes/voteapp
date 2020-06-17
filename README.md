@@ -20,6 +20,42 @@ usuários e deixar escolher entre duas opções de voto.
 
 * Front-end API que retorna a quantidade de votos.
 
+### Imagem Docker
+
+Docker hub:
+
+[vote](https://hub.docker.com/repository/docker/dansolo7/worker)
+
+[worker](https://hub.docker.com/repository/docker/dansolo7/voting)
+
+[front](https://hub.docker.com/repository/docker/dansolo7/front)
+
+
+### Helm Chart para ambientes K8S
+
+```
+.voteapp-helm
+├── Chart.yaml
+├── templates
+│   ├── front-deployment.yaml
+│   ├── front-ingress.yaml
+│   ├── front-service.yaml
+│   ├── mysql-deployment.yaml
+│   ├── mysql-service.yaml
+│   ├── NOTES.txt
+│   ├── secrets.yaml
+│   ├── vote-deployment.yml
+│   ├── vote-ingress.yml
+│   ├── vote-service.yml
+│   ├── worker-deployment.yaml
+│   ├── worker-ingress.yaml
+│   └── worker-service.yaml
+└── values.yaml
+```
+
+Na utilização do chart, altere apenas o `values.yaml` informando as credenciais da AWS e senha do banco de dados.
+A senha do banco de dados informada no chart sera a senha do usuario root, o qual a aplicação utiliza. 
+
 # API
 
 ### Aplicação Vote
@@ -28,7 +64,7 @@ operacional.
 
 Endpoints:
 
-`:8080/api/healthcheck` - Saude da fila SQS
+`/api/healthcheck` - Saude da fila SQS
 
 return code:
 
@@ -38,15 +74,15 @@ return code:
 }
 ```
 
-`:8080/api/postVotes` - enviar seu voto
+`/api/postVotes` - enviar seu voto
 
-formato de json aceito no endpoint:
+formato json aceito no endpoint:
 
 `{"userID": "id-xxxyyyzzz", "vote": "coca"}`
 
 Ex:
 
-`curl -H "Content-Type: application/json" -X POST -d '{"userID": "id-xxxyyyzzz", "vote": "coca"}' http://localhost:8080/api/postVotes`
+`curl -H "Content-Type: application/json" -X POST -d '{"userID": "id-xxxyyyzzz", "vote": "coca"}' .../api/postVotes`
 
 return code:
 
@@ -62,7 +98,7 @@ Se passar campos inválidos:
 
 Ex:
 
-`curl -H "Content-Type: application/json" -X POST -d '{"foo": "id-xxxyyyzzz", "bar": "coca"}' http://localhost:8080/api/postVotes`
+`curl -H "Content-Type: application/json" -X POST -d '{"foo": "id-xxxyyyzzz", "bar": "coca"}' .../api/postVotes`
 
 return code:
 
@@ -77,9 +113,9 @@ return code:
 A aplicação worker também disponibiliza um api. A função dos endpoints é fornecer informações de operabilidade estável
 dos serviços que a aplicação utiliza, no caso, a fila do SQS e o banco de dados.
 
-Enpoits:
+Enpoints:
 
-`8081/api/healthchecksqs` - Saude do sqs
+`/api/healthchecksqs` - Saude do sqs
 
 return code:
 
@@ -90,7 +126,7 @@ return code:
 
 ```
 
-`8081/api/healthcheckmysql` - Saude do banco de dados
+`/api/healthcheckmysql` - Saude do banco de dados
 
 return code:
 
@@ -106,7 +142,7 @@ A aplicação front disponibila um endpoint para checagem dos votos.
 
 Endpoint:
 
-`:8082/api/votes`
+`/api/votes`
 
 return code:
 
@@ -120,7 +156,7 @@ return code:
 
 ```
 
-## Setup Docker Composer
+## Setup em Docker Composer
 
 [docker](https://docs.docker.com/get-docker/)
 
@@ -168,26 +204,25 @@ Após o setup inicial:
 docker-compose -f docker-compose.yml up
 ```
 
-## Setup para K8S
+## Setup em K8S
 
 Analise qual o cenário em que o seu cluster se encontra porque é necessário utilizar um ingress controller compatível
 com o ambiente.
 
-Para qualquer cenário utilize um plugin de rede intra cluster para comunicação dos `PODS`. 
+Recomendável que utilize um plugin de rede intra cluster para comunicação dos `PODS`. 
 [Weave Net](https://www.weave.works/docs/net/latest/kubernetes/kube-addon/)
 
 Para ambiente On-Primeses recomendo utilizar o [Metallb](https://kubernetes.github.io/ingress-nginx/deploy/baremetal/)
 como Ingress Controller.
 
-A aplicação voteapp possui um helm chart para facilitar o deploy no cluster. Apenas insira a senha do banco de dados e a
-do SQS no `values.yaml`. A senha do banco de dados inserida no values será a senha padrao do usuario root 
-(Usuario o qual a aplicação utiliza).
+Recomendação de projeto para subir um ambiente Kubernetes local: Github [k8-cluster](https://github.com/danilo-lopes/k8s-cluster)
+
+---
 
 ```
 helm install voteapp ./voteapp-helm/
 ```
 
----
 
 `kubectl get po`
 
@@ -220,6 +255,15 @@ NAME                     CLASS    HOSTS            ADDRESS        PORTS   AGE
 voteapp-front-ingress    <none>   www.front.com    192.168.1.60   80      12h
 voteapp-vote-ingress     <none>   www.vote.com     192.168.1.60   80      12h
 voteapp-worker-ingress   <none>   www.worker.com   192.168.1.60   80      12h
+```
+
+`kubectl get secrets`
+
+```
+NAME                            TYPE                                  DATA   AGE
+default-token-tcq9q             kubernetes.io/service-account-token   3      69m
+sh.helm.release.v1.voteapp.v1   helm.sh/release.v1                    1      57m
+voteapp-voteapp-secret          Opaque                                3      57m
 ```
 
 # Nota
