@@ -38,7 +38,7 @@ podTemplate(label: 'mypod', serviceAccount: 'jenkins-ci', containers: [
   ) {
     node('vote') {
         stage('Get latest version of code') {
-          checkout scm vote/
+          checkout scm
         }
         stage('Check running containers') {
             container('docker') {  
