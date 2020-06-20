@@ -1,11 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: {{ .Values.KUBERNETES_NAMESPACE }}
   annotations:
   labels:
     run: front
   name: {{ .Release.Name }}-front-server
-  namespace: default
 spec:
   replicas: 1
   selector:
