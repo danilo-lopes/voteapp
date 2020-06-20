@@ -1,4 +1,4 @@
-podTemplate(label: 'vote', serviceAccount: 'jenkins-ci', containers: [ 
+podTemplate(label: 'mypod', serviceAccount: 'jenkins-ci', containers: [ 
     containerTemplate(
       name: 'docker', 
       image: 'docker', 
@@ -36,7 +36,7 @@ podTemplate(label: 'vote', serviceAccount: 'jenkins-ci', containers: [
     hostPathVolume(mountPath: '/usr/local/bin/helm', hostPath: '/usr/local/bin/helm')
   ]
   ) {
-    node('vote') {
+    node('mypod') {
         stage('Get latest version of code') {
           checkout scm
         }
