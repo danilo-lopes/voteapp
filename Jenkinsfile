@@ -1,4 +1,4 @@
-podTemplate(serviceAccount: 'jenkins-ci', containers: [ 
+podTemplate(label: 'master', serviceAccount: 'jenkins-ci', containers: [ 
     containerTemplate(
       name: 'docker', 
       image: 'docker', 
@@ -36,7 +36,7 @@ podTemplate(serviceAccount: 'jenkins-ci', containers: [
     hostPathVolume(mountPath: '/usr/local/bin/helm', hostPath: '/usr/local/bin/helm')
   ]
   ) {
-    node('mypod') {
+    node('master') {
         stage('Get latest version of code') {
           checkout scm
         }
