@@ -248,6 +248,8 @@ voteapp-voteapp-secret          Opaque                                3      57m
 
 Foi utilizado o [Jenkins](https://www.jenkins.io/doc/) como CI, pois é o CI que possui mais documentação na internet. Cada projeto possui o seu `Jenkinsfile` para integração com o mesmo.
 
+É necessário subir o banco de dados Mysql e objeto [secrets](https://kubernetes.io/docs/concepts/configuration/secret/) no kubernetes manualmente. A `secrets` deve conter a senha de conexão do SQS(aws secret key e access key) e senha do banco de dados do usuario root.
+
 Com base na arquitetura da aplicação que foi mostrado acima, o desenho lógico da pipeline segue a seguinte:
 
 ![Imgur](https://i.imgur.com/KnNfZhn.png)
@@ -302,6 +304,8 @@ persistence:
 
 ```
 O container jenkins-slave precisa ter permissão de acesso ao processo `docker.sock` para criação das imagens das aplicações. Como o jenkins está local no cluster, dê permissão 666 para o processo (chmod 666 /var/run/docker.sock)
+
+Obs: Foi utilizado o Jenkins sem persistencia de dados.
 
 # Nota
 
