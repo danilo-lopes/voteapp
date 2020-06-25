@@ -1,9 +1,15 @@
 # Voting App
 
-Aplicação simples distribuída em containeres. Todos as suas camadas desenvolvidas em Python.
+Simples aplicação distribuída em containeres. Todos as suas camadas desenvolvidas em Python.
 
 O objetivo desta foi desenvolver habildades no processamento, armazenamento e entrega de dados, englobando serviços de
 fila, banco de dados e serviços de WEB/API.
+
+[voting](https://github.com/danilo-lopes/vote)
+
+[worker](https://github.com/danilo-lopes/worker)
+
+[front](https://github.com/danilo-lopes/front)
 
 # Arquitetura
 
@@ -20,41 +26,13 @@ usuários e deixar escolher entre duas opções de voto.
 
 * Front-end API que retorna a quantidade de votos.
 
-### Imagem Docker
+# Docker Hub
 
-Docker hub:
-
-[vote](https://hub.docker.com/repository/docker/dansolo7/worker)
+[voting](https://hub.docker.com/repository/docker/dansolo7/worker)
 
 [worker](https://hub.docker.com/repository/docker/dansolo7/voting)
 
 [front](https://hub.docker.com/repository/docker/dansolo7/front)
-
-
-### Helm Chart para ambientes K8S
-
-```
-.voteapp-helm
-├── Chart.yaml
-├── templates
-│   ├── front-deployment.yaml
-│   ├── front-ingress.yaml
-│   ├── front-service.yaml
-│   ├── mysql-deployment.yaml
-│   ├── mysql-service.yaml
-│   ├── NOTES.txt
-│   ├── secrets.yaml
-│   ├── vote-deployment.yml
-│   ├── vote-ingress.yml
-│   ├── vote-service.yml
-│   ├── worker-deployment.yaml
-│   ├── worker-ingress.yaml
-│   └── worker-service.yaml
-└── values.yaml
-```
-
-Na utilização do chart, altere apenas o `values.yaml` informando as credenciais da AWS e senha do banco de dados.
-A senha do banco de dados informada no chart sera a senha do usuario root, o qual a aplicação utiliza. 
 
 # API
 
@@ -265,6 +243,65 @@ default-token-tcq9q             kubernetes.io/service-account-token   3      69m
 sh.helm.release.v1.voteapp.v1   helm.sh/release.v1                    1      57m
 voteapp-voteapp-secret          Opaque                                3      57m
 ```
+
+# CICD
+
+Foi utilizado o [Jenkins]() como CI, pois é o CI que possui mais documentação na internet. Cada projeto possui o seu `Jenkinsfile` para integração com o mesmo.
+
+Com base naa arquitetura da aplicação que foi mostrado acima, o desenho lógico da pipeline segue a seguinte:
+
+#imagem da arquiterura
+
+### Setup usado no Jenkins
+
+Helm chart utilizado para deploy do jenkins no cluster: [helm chart](https://github.com/helm/charts/tree/master/stable/jenkins)
+
+Valores usados no `values.yaml`:
+
+```
+No master
+
+adminUser: "admin"
+  adminPassword: "sua senha"
+
+---
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "256Mi"
+    limits:
+      cpu: "1000m"
+      memory: "4096Mi"
+---
+installPlugins:
+    - blueocean:1.18.1
+    - kubernetes-cd:2.0.0
+---
+  ingress:
+    enabled: true
+---
+No agent
+
+image: "joao29a/jnlp-slave-alpine-docker"
+---
+resources:
+    requests:
+      cpu: "500m"
+      memory: "500Mi"
+    limits:
+      cpu: "500m"
+      memory: "500Mi"
+---
+volumes:
+    - type: HostPath
+      hostPath: /var/run/docker.sock
+      mountPath: /var/run/docker.sock
+---
+persistence:
+  enabled: false
+
+```
+O container jenkins-slave precisa ter permissão de acesso ao processo `docker.sock` para criação das imagens das aplicações. Como o jenkins está local no cluster, dê permissão 666 para o processo (chmod 666 /var/run/docker.sock)
 
 # Nota
 
