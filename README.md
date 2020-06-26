@@ -248,7 +248,9 @@ voteapp-voteapp-secret          Opaque                                3      57m
 
 Foi utilizado o [Jenkins](https://www.jenkins.io/doc/) como CI, pois é o CI que possui mais documentação na internet. Cada projeto possui o seu `Jenkinsfile` para integração com o mesmo.
 
-É necessário subir o banco de dados Mysql e objeto [secrets](https://kubernetes.io/docs/concepts/configuration/secret/) no kubernetes manualmente. A `secrets` deve conter a senha de conexão do SQS(aws secret key e access key) e senha do banco de dados do usuario root.
+É necessário subir o banco de dados Mysql e o objeto [secrets](https://kubernetes.io/docs/concepts/configuration/secret/) no kubernetes manualmente. A `secrets` deve conter a senha de conexão do SQS(aws secret key e access key) e senha do banco de dados do usuario root.
+
+O Jenkins utiliza uma credencial própria e acesso ao cluster para realizar os deploys (RBAC). Seu acesso apenas tem persmissões de admin nos namespaces `jenkins`, onde é feito o deploy do mesmo, e no `voteapp`, onde a aplicação reside. Sendo assim o Jenkins fica apenas com as permissões necessárias nos lugares necessários. Documentação de ajuda para criação de credencial de acesso a um cluster: [RBAC](https://www.openlogic.com/blog/granting-user-access-your-kubernetes-cluster)
 
 Com base na arquitetura da aplicação que foi mostrado acima, o desenho lógico da pipeline segue a seguinte:
 
