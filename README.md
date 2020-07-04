@@ -246,68 +246,276 @@ voteapp-voteapp-secret          Opaque                                3      57m
 
 # CICD
 
-Foi utilizado o [Jenkins](https://www.jenkins.io/doc/) como CI, pois é o CI que possui mais documentação na internet. Cada projeto possui o seu `Jenkinsfile` para integração com o mesmo.
+Foi utilizado o [Gitlab](https://docs.gitlab.com/) como CICD, ferramenta bem fácil de utilização, possui bastente documentação na internet e possui versão free (gitlab ce).
 
-É necessário subir o banco de dados Mysql e o objeto [secrets](https://kubernetes.io/docs/concepts/configuration/secret/) no kubernetes manualmente. A `secrets` deve conter a senha de conexão do SQS(aws secret key e access key) e senha do banco de dados do usuario root.
+É interessante fazer um fork dos projetos das aplicações e subir no próprio gitlab e fazer o CICD nele.
 
-O Jenkins utiliza uma credencial própria e acesso ao cluster para realizar os deploys (RBAC). Seu acesso apenas tem persmissões de admin nos namespaces `jenkins`, onde é feito o deploy do mesmo, e no `voteapp`, onde a aplicação reside. Sendo assim o Jenkins fica apenas com as permissões necessárias nos lugares necessários. Documentação de ajuda para criação de credencial de acesso a um cluster: [RBAC](https://www.openlogic.com/blog/granting-user-access-your-kubernetes-cluster)
+Você pode usar o gitlab direto no Kubernetes (via helm chart) ou instalar em um servidor dedicado, no meu projeto achei melhor em utilizá-lo em um servidor dedicado, por estar fazendo o versionamento do código nele.
 
 Com base na arquitetura da aplicação que foi mostrado acima, o desenho lógico da pipeline segue a seguinte:
 
-![Imgur](https://i.imgur.com/KnNfZhn.png)
+![Imgur](https://i.imgur.com/zpFbIaI.png)
 
-### Setup usado no Jenkins
+### Gilab setup
 
-Helm chart utilizado para deploy do jenkins no cluster: [helm chart](https://github.com/helm/charts/tree/master/stable/jenkins)
+O setup que vou descrever adiante foi feito em um cluster Kubernetes. Vou falar de algumas questões chaves que são necessárias para a configuração do gitlab.
 
-Valores usados no `values.yaml`:
+O gitlab utiliza um `agent` para fazer deploy do projeto no cluster, quando você faz a integração dele com cluster o gitlab "instancia" dois PODs, um `tiller-deploy`(responsável pela instação de outros plugins do gitlab no cluster) e um `runner-gitlab`(responsável pelo CICD das suas aplicações).
 
-```
-No master
+Você precisa de dois permissionamentos. Um para o tiller e o outro para o runner 
 
-adminUser: "admin"
-  adminPassword: "sua senha"
+Para o tiller:
 
----
-  resources:
-    requests:
-      cpu: "50m"
-      memory: "256Mi"
-    limits:
-      cpu: "1000m"
-      memory: "4096Mi"
----
-installPlugins:
-    - blueocean:1.18.1
-    - kubernetes-cd:2.0.0
----
-  ingress:
-    enabled: true
----
-No agent
+A criação de uma `serviceaccount` com permissão de `cluster-admin` no `namespace` kube-system:
 
-image: "joao29a/jnlp-slave-alpine-docker"
----
-resources:
-    requests:
-      cpu: "500m"
-      memory: "500Mi"
-    limits:
-      cpu: "500m"
-      memory: "500Mi"
----
-volumes:
-    - type: HostPath
-      hostPath: /var/run/docker.sock
-      mountPath: /var/run/docker.sock
----
-persistence:
-  enabled: false
+`kubectl create serviceaccount -n kube-system gitlab`
+
+`kubectl create clusterrolebinding admin-gitlab --serviceaccount kube-system:gitlab --clusterrole cluster-admin`
+
+Instale o `GitLab Runner` no painel, assim ele vai criar o POD do mesmo e:
+
+`kubectl create clusterrolebinding gitlab-deploy-user --serviceaccount gitlab-managed-apps:default --clusterrole admin`
+
+Com isso o gitlab consegue instalar qualquer plugin que você deseja utilizando a serviceaccount gitab, lembrando que a mesma possui permissão de clusterrole, o tiller só tem a função de instalação de plugins, e consegue fazer deploy das pipelines em qualquer namespace, por a serviceaccount do runner (default) ter permissão de admin no cluster.
+
+**build**
 
 ```
-O container jenkins-slave precisa ter permissão de acesso ao processo `docker.sock` para criação das imagens das aplicações. Como o jenkins está local no cluster, dê permissão 666 para o processo (chmod 666 /var/run/docker.sock)
+Running with gitlab-runner 13.0.1 (21cb397c)
+   on runner-gitlab-runner-7467f44f8-qjb5w ssJeKW2u
+Preparing the "kubernetes" executor
+00:00
+ Using Kubernetes namespace: gitlab-managed-apps
+ Using Kubernetes executor with image docker:dind ...
+Preparing environment
+00:03
+ Waiting for pod gitlab-managed-apps/runner-ssjekw2u-project-1-concurrent-0n9p7l to be running, status is Pending
+ Running on runner-ssjekw2u-project-1-concurrent-0n9p7l via runner-gitlab-runner-7467f44f8-qjb5w...
+Getting source from Git repository
+00:00
+ Fetching changes with git depth set to 50...
+ Initialized empty Git repository in /builds/gitlab/voting/.git/
+ Created fresh repository.
+ From https://gitlab.biqueirabr.com.br/gitlab/voting
+  * [new ref]         refs/pipelines/1 -> refs/pipelines/1
+  * [new branch]      master           -> origin/master
+ Checking out 3c79c303 as master...
+ Skipping Git submodules setup
+Restoring cache
+00:00
+Downloading artifacts
+00:01
+Running before_script and script
+00:11
+ $ docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+ WARNING! Using --password via the CLI is insecure. Use --password-stdin.
+ WARNING! Your password will be stored unencrypted in /root/.docker/config.json.
+ Configure a credential helper to remove this warning. See
+ https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+ Login Succeeded
+ $ docker build -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_SHA" .
+ Step 1/5 : FROM dansolo7/voteapp-image:1.0
+ 1.0: Pulling from dansolo7/voteapp-image
+ 8559a31e96f4: Pulling fs layer
+ 62e60f3ef11e: Pulling fs layer
+ 002bcbc97d49: Pulling fs layer
+ ba21c0b7837a: Pulling fs layer
+ b3463869e7af: Pulling fs layer
+ f536a7750ecd: Pulling fs layer
+ 6bdf1961c0ae: Pulling fs layer
+ b3463869e7af: Waiting
+ ba21c0b7837a: Waiting
+ f536a7750ecd: Waiting
+ 6bdf1961c0ae: Waiting
+ 62e60f3ef11e: Verifying Checksum
+ 62e60f3ef11e: Download complete
+ ba21c0b7837a: Verifying Checksum
+ ba21c0b7837a: Download complete
+ 8559a31e96f4: Verifying Checksum
+ 8559a31e96f4: Download complete
+ 002bcbc97d49: Verifying Checksum
+ 002bcbc97d49: Download complete
+ b3463869e7af: Verifying Checksum
+ b3463869e7af: Download complete
+ f536a7750ecd: Verifying Checksum
+ f536a7750ecd: Download complete
+ 6bdf1961c0ae: Verifying Checksum
+ 6bdf1961c0ae: Download complete
+ 8559a31e96f4: Pull complete
+ 62e60f3ef11e: Pull complete
+ 002bcbc97d49: Pull complete
+ ba21c0b7837a: Pull complete
+ b3463869e7af: Pull complete
+ f536a7750ecd: Pull complete
+ 6bdf1961c0ae: Pull complete
+ Digest: sha256:29171c0f295e0c2dece547a65e1683d02ea8eb760f29220f7cbe022226a2df61
+ Status: Downloaded newer image for dansolo7/voteapp-image:1.0
+  ---> 9ef2937d1053
+ Step 2/5 : WORKDIR /app
+  ---> Running in 1e782b0b8ac7
+ Removing intermediate container 1e782b0b8ac7
+  ---> 1c1986f0bccd
+ Step 3/5 : COPY app docker-entrypoint.sh ./
+  ---> c07e61db9208
+ Step 4/5 : EXPOSE 80
+  ---> Running in 1c0e7e69a4bc
+ Removing intermediate container 1c0e7e69a4bc
+  ---> 160e1c2cf989
+ Step 5/5 : ENTRYPOINT bash docker-entrypoint.sh
+  ---> Running in a1d90ebc19b1
+ Removing intermediate container a1d90ebc19b1
+  ---> 7ea6b0b76a65
+ Successfully built 7ea6b0b76a65
+ Successfully tagged [MASKED]:3c79c303bbd2195d43614a818787130da3b56838
+ $ docker push "$CI_REGISTRY_IMAGE"
+ The push refers to repository [docker.io/[MASKED]]
+ 2b685e59c43a: Preparing
+ 94c290b5debc: Preparing
+ 4aff098e489e: Preparing
+ 966e83c481bc: Preparing
+ 0c6163f2d025: Preparing
+ 361df01300cf: Preparing
+ 8f9ba0be9040: Preparing
+ 0bd71a837902: Preparing
+ 13cb14c2acd3: Preparing
+ 361df01300cf: Waiting
+ 8f9ba0be9040: Waiting
+ 0bd71a837902: Waiting
+ 13cb14c2acd3: Waiting
+ 0c6163f2d025: Layer already exists
+ 4aff098e489e: Mounted from dansolo7/voteapp-image
+ 8f9ba0be9040: Layer already exists
+ 966e83c481bc: Mounted from dansolo7/voteapp-image
+ 361df01300cf: Layer already exists
+ 13cb14c2acd3: Layer already exists
+ 0bd71a837902: Layer already exists
+ 2b685e59c43a: Pushed
+ 94c290b5debc: Pushed
+ 3c79c303bbd2195d43614a818787130da3b56838: digest: sha256:fa0d2fb22cb96a376689d49b67bd4ab5cba3cab59a358542824519f451982e39 size: 2204
+Running after_script
+00:00
+Saving cache
+00:00
+Uploading artifacts for successful job
+00:00
+ Job succeeded
 
-Obs: Foi utilizado o Jenkins sem persistencia de dados.
+```
+
+**deploy**
+
+```
+Running with gitlab-runner 13.0.1 (21cb397c)
+   on runner-gitlab-runner-7467f44f8-qjb5w ssJeKW2u
+Preparing the "kubernetes" executor
+00:00
+ Using Kubernetes namespace: gitlab-managed-apps
+ Using Kubernetes executor with image bitnami/kubectl ...
+Preparing environment
+00:06
+ Waiting for pod gitlab-managed-apps/runner-ssjekw2u-project-1-concurrent-0hcnkk to be running, status is Pending
+ Waiting for pod gitlab-managed-apps/runner-ssjekw2u-project-1-concurrent-0hcnkk to be running, status is Pending
+ Running on runner-ssjekw2u-project-1-concurrent-0hcnkk via runner-gitlab-runner-7467f44f8-qjb5w...
+Getting source from Git repository
+00:00
+ Fetching changes with git depth set to 50...
+ Initialized empty Git repository in /builds/gitlab/voting/.git/
+ Created fresh repository.
+ From https://gitlab.biqueirabr.com.br/gitlab/voting
+  * [new ref]         refs/pipelines/1 -> refs/pipelines/1
+  * [new branch]      master           -> origin/master
+ Checking out 3c79c303 as master...
+ Skipping Git submodules setup
+Restoring cache
+00:01
+Downloading artifacts
+00:00
+Running before_script and script
+00:00
+ $ sed 's/__VERSION__/'"$CI_COMMIT_SHA"'/g; s/__NAMESPACE__/voteapp/g' vote-k8s.yaml > vote-kubernetes.yaml;
+ $ kubectl apply -f vote-kubernetes.yaml
+ deployment.apps/vote-server created
+ service/vote-service created
+ ingress.extensions/vote-ingress created
+Running after_script
+00:00
+Saving cache
+00:00
+Uploading artifacts for successful job
+00:01
+ Job succeeded
+```
+
+---
+
+```
+root@ip-192-168-2-250:~# kubectl get po -n voteapp
+NAME                            READY   STATUS    RESTARTS   AGE
+front-server-56874f5ff6-kvx5j   1/1     Running   0          83m
+mysql-8dfb77fcf-t7mxl           1/1     Running   0          91m
+vote-server-76d9c76d4f-r98hb    1/1     Running   0          88m
+worker-server-6b4c54568-fxz8l   1/1     Running   0          86m
+```
+
+```
+NAMESPACE   NAME             CLASS    HOSTS                      ADDRESS                                                                  PORTS   AGE
+voteapp     front-ingress    <none>   front.biqueirabr.com.br    a3c8f2e5e74f94363b78927d99dd26bb-191501161.us-east-1.elb.amazonaws.com   80      85m
+voteapp     vote-ingress     <none>   vote.biqueirabr.com.br     a3c8f2e5e74f94363b78927d99dd26bb-191501161.us-east-1.elb.amazonaws.com   80      88m
+voteapp     worker-ingress   <none>   worker.biqueirabr.com.br   a3c8f2e5e74f94363b78927d99dd26bb-191501161.us-east-1.elb.amazonaws.com   80      87m
+```
+
+---
+
+`10:21:34 danilo@moria github_pessoal → curl http://vote.biqueirabr.com.br/api/healthcheck`
+
+```
+{
+    "sqsStatus": "OK"
+}
+```
+
+`11:10:20 danilo@moria github_pessoal → curl -H "Content-Type: application/json" -X POST -d '{"userID": "id-xxxyyyzzz", "vote": "coca"}' http://vote.biqueirabr.com.br/api/postVotes`
+
+```
+{
+    "voteStatus": 200
+}
+```
+
+`11:10:27 danilo@moria github_pessoal → curl -H "Content-Type: application/json" -X POST -d '{"foo": "id-xxxyyyzzz", "bar": "coca"}' http://vote.biqueirabr.com.br/api/postVotes`
+
+```
+{
+    "badRequest": "Your json doesnt pass in the application creteria"
+}
+```
+
+`11:10:32 danilo@moria github_pessoal → curl http://worker.biqueirabr.com.br/api/healthchecksqs`
+
+```
+{
+    "sqsStatus": "OK"
+}
+```
+
+`11:10:51 danilo@moria github_pessoal → curl http://worker.biqueirabr.com.br/api/healthcheckmysql`
+
+```
+{
+    "mysqlStatus": "OK"
+}
+```
+
+`11:11:06 danilo@moria github_pessoal → curl http://front.biqueirabr.com.br/api/votes`
+
+```
+{
+    "votes": {
+        "coca": "1",
+        "pepsi": "0"
+    }
+}
+```
 
 # Nota
 
