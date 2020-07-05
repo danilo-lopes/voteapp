@@ -5,6 +5,8 @@ Simples aplicação distribuída em containeres. Todos as suas camadas desenvolv
 O objetivo desta foi desenvolver habildades no processamento, armazenamento e entrega de dados, englobando serviços de
 fila, banco de dados e serviços de WEB/API.
 
+## Respositório
+
 [voting](https://github.com/danilo-lopes/vote)
 
 [worker](https://github.com/danilo-lopes/worker)
@@ -26,7 +28,7 @@ usuários e deixar escolher entre duas opções de voto.
 
 * Front-end API que retorna a quantidade de votos.
 
-# Docker Hub
+## Repositório das imagens docker
 
 [voting](https://hub.docker.com/repository/docker/dansolo7/worker)
 
@@ -40,9 +42,11 @@ usuários e deixar escolher entre duas opções de voto.
 A aplicação vote disponibiliza um api para realizar os votos e checar se o serviço que o mesmo utiliza (SQS) está
 operacional. 
 
-Endpoints:
+## Endpoints:
 
-`/api/healthcheck` - Saude da fila SQS
+### Disponibilidade da fila no SQS
+
+`/api/healthcheck`
 
 return code:
 
@@ -52,7 +56,9 @@ return code:
 }
 ```
 
-`/api/postVotes` - enviar seu voto
+## Post de um voto
+
+`/api/postVotes`
 
 formato json aceito no endpoint:
 
@@ -78,7 +84,7 @@ Ex:
 
 `curl -H "Content-Type: application/json" -X POST -d '{"foo": "id-xxxyyyzzz", "bar": "coca"}' .../api/postVotes`
 
-return code:
+O return code será:
 
 ```
 {
@@ -91,9 +97,11 @@ return code:
 A aplicação worker também disponibiliza um api. A função dos endpoints é fornecer informações de operabilidade estável
 dos serviços que a aplicação utiliza, no caso, a fila do SQS e o banco de dados.
 
-Enpoints:
+## Enpoints:
 
-`/api/healthchecksqs` - Saude do sqs
+### Disponibilidade da fila SQS
+
+`/api/healthchecksqs`
 
 return code:
 
@@ -104,7 +112,9 @@ return code:
 
 ```
 
-`/api/healthcheckmysql` - Saude do banco de dados
+### Disponibilidade do banco MySQL
+
+`/api/healthcheckmysql`
 
 return code:
 
@@ -118,7 +128,9 @@ return code:
 
 A aplicação front disponibila um endpoint para checagem dos votos.
 
-Endpoint:
+## Endpoint:
+
+### Votos realizados
 
 `/api/votes`
 
@@ -134,7 +146,7 @@ return code:
 
 ```
 
-## Setup em Docker Composer
+## Setup para Docker Composer
 
 [docker](https://docs.docker.com/get-docker/)
 
@@ -182,10 +194,7 @@ Após o setup inicial:
 docker-compose -f docker-compose.yml up
 ```
 
-## Setup em K8S
-
-Analise qual o cenário em que o seu cluster se encontra porque é necessário utilizar um ingress controller compatível
-com o ambiente.
+## Setup para Kubernetes
 
 Recomendável que utilize um plugin de rede intra cluster para comunicação dos `PODS`. 
 [Weave Net](https://www.weave.works/docs/net/latest/kubernetes/kube-addon/)
@@ -193,7 +202,9 @@ Recomendável que utilize um plugin de rede intra cluster para comunicação dos
 Para ambiente On-Primeses recomendo utilizar o [Metallb](https://kubernetes.github.io/ingress-nginx/deploy/baremetal/)
 como Ingress Controller.
 
-Recomendação de projeto para subir um ambiente Kubernetes local: Github [k8-cluster](https://github.com/danilo-lopes/k8s-cluster)
+Recomendação de projeto para subir um ambiente Kubernetes local: [k8-cluster](https://github.com/danilo-lopes/k8s-cluster)
+
+Foi desenvolvido um helm chart para deploy da stack inteira no cluster, criando o banco de dados MySQL, secrets, ingress e etc.
 
 ---
 
@@ -246,9 +257,9 @@ voteapp-voteapp-secret          Opaque                                3      57m
 
 # CICD
 
-Foi utilizado o [Gitlab](https://docs.gitlab.com/) como CICD, ferramenta bem fácil de utilização, possui bastente documentação na internet e possui versão free (gitlab ce).
+Foi utilizado o [Gitlab](https://docs.gitlab.com/) como CICD, ferramenta bem fácil de utilização, possui bastente documentação na internet e possui versão free [Gitlab CE](https://about.gitlab.com/install/?version=ce).
 
-É interessante fazer um fork dos projetos das aplicações e subir no próprio gitlab e fazer o CICD nele.
+É interessante fazer um fork dos projetos das aplicações e subir no próprio gitlab e fazer o CICD direto nele, mais perto de uma simulação real.
 
 Você pode usar o gitlab direto no Kubernetes (via helm chart) ou instalar em um servidor dedicado, no meu projeto achei melhor em utilizá-lo em um servidor dedicado, por estar fazendo o versionamento do código nele.
 
@@ -258,13 +269,13 @@ Com base na arquitetura da aplicação que foi mostrado acima, o desenho lógico
 
 ### Gilab setup
 
-O setup que vou descrever adiante foi feito em um cluster Kubernetes. Vou falar de algumas questões chaves que são necessárias para a configuração do gitlab.
+Vou falar de algumas questões chaves que são necessárias para a configuração do gitlab.
 
-O gitlab utiliza um `agent` para fazer deploy do projeto no cluster, quando você faz a integração dele com cluster o gitlab "instancia" dois PODs, um `tiller-deploy`(responsável pela instação de outros plugins do gitlab no cluster) e um `runner-gitlab`(responsável pelo CICD das suas aplicações).
+O gitlab utiliza um `agent` para fazer deploy do projeto no cluster, quando você faz a integração dele com cluster o gitlab "instancia" dois PODs, um `tiller-deploy`(responsável pela instação de outros plugins do gitlab no cluster) e um `runner-gitlab` (responsável pelo CICD das suas aplicações).
 
 Você precisa de dois permissionamentos. Um para o tiller e o outro para o runner 
 
-Para o tiller:
+Para o tiller é necessário:
 
 A criação de uma `serviceaccount` com permissão de `cluster-admin` no `namespace` kube-system:
 
@@ -272,11 +283,11 @@ A criação de uma `serviceaccount` com permissão de `cluster-admin` no `namesp
 
 `kubectl create clusterrolebinding admin-gitlab --serviceaccount kube-system:gitlab --clusterrole cluster-admin`
 
-Instale o `GitLab Runner` no painel, assim ele vai criar o POD do mesmo e:
+Antes da permissão para o Runner, instale o `GitLab Runner` no painel de integração do gitlab, assim ele vai criar o POD do mesmo. Quando você instala o plugin Gitlab Runner no painel ele cria uma serviceaccount chamada `default`, com isso, devemos dar permissão para essa serviceaccount, que no meu caso, dei permissão de admin em todo o cluster, assim ela consegue fazer deploy em qualquer namespace:
 
 `kubectl create clusterrolebinding gitlab-deploy-user --serviceaccount gitlab-managed-apps:default --clusterrole admin`
 
-Com isso o gitlab consegue instalar qualquer plugin que você deseja utilizando a serviceaccount gitab, lembrando que a mesma possui permissão de clusterrole, o tiller só tem a função de instalação de plugins, e consegue fazer deploy das pipelines em qualquer namespace, por a serviceaccount do runner (default) ter permissão de admin no cluster.
+Com todo esse permissionamento o gitlab consegue instalar qualquer plugin que você desejar utilizando a serviceaccount gitab, lembrando que a mesma possui permissão de clusterrole, o tiller só tem a função de instalação de plugins, e consegue fazer deploy das pipelines em qualquer namespace por a serviceaccount do runner, default, ter permissão de admin no cluster.
 
 **build**
 

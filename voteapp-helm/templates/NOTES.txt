@@ -1,1 +1,7 @@
 Vote application installed successfully!
+
+See:
+
+$ kubectl get po -n voteapp
+$ kubectl get ingress -n voteapp
+$ kubectl get deploy -n voteapp

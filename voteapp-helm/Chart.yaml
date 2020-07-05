@@ -1,6 +1,6 @@
 apiVersion: v2
 name: VoteApp
-description: A Helm chart for Vote application
+description: A Helm chart for Voteapp application
 
 # A chart can be either an 'application' or a 'library' chart.
 #
